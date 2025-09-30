@@ -13,6 +13,7 @@ This folder contains the cross-platform C implementation of MCES.
 
 ```sh
 make
+```
 
 ### Dependencies
 
@@ -25,33 +26,45 @@ make
 ## Output Binaries
 
 This will build the following tools:
-- `mces_encrypt`          (File/stream encryption CLI)
-- `mces_decrypt`          (File/stream decryption CLI)
-- `mces_bench_stream`     (Performance benchmarking)
-- `mces_stream_dieharder` (Randomness tester for dieharder/practrand)
-- `mces_make_nist_bins`   (NIST test binary output generator)
-- `mces_test_harness`     (Comprehensive cryptanalysis/test harness)
+- `mces_encrypt`
+- `mces_decrypt`
+- `mces_bench_stream`
+- `mces_stream_dieharder`
+- `mces_make_nist_bins`
+- `mces_test_harness`
 
 ## Usage
 
-Basic encryption:
+### **Encryption**
 ```sh
-./mces_encrypt --in input.txt --out encrypted.mces
-```
-Decryption:
-```sh
-./mces_decrypt --in encrypted.mces --out output.txt
-```
-For help:
-```sh
-./mces_encrypt --help
+# Option 1: Let MCES generate a random strong password (recommended, prints to console)
+./mces_encrypt input_file
+
+# Option 2: Supply your own password (30-100 Unicode codepoints required)
+./mces_encrypt pw "your_password_here" input_file
 ```
 
-## GUI and Sigilbook
+### **Decryption**
+```sh
+# Option 1: Interactive prompt (default)
+./mces_decrypt vault_file
 
-- To use the graphical interface, run `MCES.py` (requires Python + PyQt6).
-- Passwords are stored/managed in `sigilbook.py` (secure password vault).
+# Option 2: Supply password non-interactively
+./mces_decrypt pw "your_password_here" vault_file
+```
+
+### **Benchmarks & Randomness Testing**
+```sh
+./mces_bench_stream     # Throughput benchmark
+./mces_stream_dieharder # Pipe output to dieharder/practrand
+./mces_make_nist_bins   # Generate NIST test binaries
+./mces_test_harness     # Full crypto validation suite
+```
+
+## **Password Requirements**
+- All passwords must be **30–100 Unicode codepoints** (not bytes), and non-surrogate.
 
 ## Security
 
 This is research software; do not use for critical secrets until independently audited.
+
