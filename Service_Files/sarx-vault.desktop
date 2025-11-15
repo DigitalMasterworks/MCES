@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SARX Vault Handler
+Comment=Decrypt SARX .vault files via Sigilbook or password prompt
+Exec=sarx-vault-handler %F
+Terminal=false
+MimeType=application/x-sarx-vault;
+Categories=Utility;Security;
+X-GNOME-UsesNotifications=true

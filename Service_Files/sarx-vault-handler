@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+# sarx-vault-handler — decrypt → open → wait (file-specific) → re-encrypt → save pw
+set -Eeuo pipefail
+IFS=$'\n\t'
+export PATH="$HOME/.cargo/bin:/usr/local/bin:/usr/bin:$PATH"
+
+have(){ command -v "$1" >/dev/null 2>&1; }
+note(){ have notify-send && notify-send "SARX" "$1" || true; }
+errbox(){ local m="$1"; if have zenity; then zenity --error --title="SARX" --text="$m" >/dev/null 2>&1||true; elif have kdialog; then kdialog --error "$m" >/dev/null 2>&1||true; else echo "SARX: $m" >&2; fi; }
+dbg(){ [[ "${SARX_HANDLER_DEBUG:-0}" = 1 ]] && echo "[DBG] $*" >&2 || true; }
+
+canon(){ python3 - "$1" <<'PY'
+import os,sys
+try: print(os.path.realpath(sys.argv[1]))
+except: print(sys.argv[1])
+PY
+}
+
+uri_to_path(){
+  local u="$1"
+  if [[ "$u" == file://* ]]; then
+    python3 - "$u" <<'PY'
+import sys,urllib.parse
+u=sys.argv[1]; p=urllib.parse.urlparse(u).path
+print(urllib.parse.unquote(p))
+PY
+  else printf '%s\n' "$u"; fi
+}
+
+prompt_pw(){
+  local path="$1" out=""
+  # Only prompt if in an interactive terminal
+  if [[ -t 0 && -t 1 ]]; then
+    if have zenity; then
+      out="$(zenity --password --title="SARX Decrypt" --text="Enter password for:\n${path}" || true)"
+    elif have kdialog; then
+      out="$(kdialog --password "Enter password for:\n${path}" || true)"
+    else
+      read -r -s -p "Password for ${path}: " out || true; echo
+    fi
+    printf '%s' "$out"
+  else
+    # Non-interactive, don't prompt!
+    echo ""
+  fi
+}
+# ---- precise waiting for THIS file -----------------------------------------
+in_use(){
+  local p="$1"
+  (have lsof && lsof -t -- "$p" >/dev/null 2>&1) || (have fuser && fuser -s -- "$p" >/dev/null 2>&1)
+}
+
+wait_for_file_closed(){
+  local p="$1"
+  # First choice: let GNOME wait for the app itself
+  if have gio; then
+    dbg "gio open -w $p"
+    if gio open -w "$p" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  # Second choice: watch THIS path for close/rename/delete
+  if have inotifywait; then
+    dbg "inotifywait on file $p"
+    inotifywait -qq -e close_write,close_nowrite,move_self,delete_self -- "$p" >/dev/null 2>&1 || true
+  else
+    # Fallback: 3 consecutive quiet polls
+    dbg "polling lsof/fuser for $p"
+    local quiet=0
+    while :; do
+      if in_use "$p"; then quiet=0; else quiet=$((quiet+1)); [[ $quiet -ge 3 ]] && break; fi
+      sleep 2
+    done
+  fi
+  # Small settle time
+  sleep 0.25
+}
+
+gen_pw(){ python3 - <<'PY'
+import secrets; alphabet=''.join(chr(i) for i in range(33,127))
+print(''.join(secrets.choice(alphabet) for _ in range(64)))
+PY
+}
+
+find_tools(){
+  if have sarx_decrypt; then DECRYPT=(sarx_decrypt)
+  elif have sarx; then DECRYPT=(sarx decrypt)
+  else errbox "sarx_decrypt/sarx not found (is ~/.cargo/bin on PATH?)"; exit 1; fi
+
+  if have sarx_encrypt; then ENCRYPT=(sarx_encrypt)
+  elif have sarx; then ENCRYPT=(sarx encrypt)
+  else errbox "sarx_encrypt/sarx not found"; exit 1; fi
+}
+
+open_then_wait(){
+  local p="$1"
+  if have gio; then
+    gio open -w "$p" >/dev/null 2>&1 && return 0
+  fi
+  if have xdg-open; then
+    xdg-open "$p" >/dev/null 2>&1 || true
+  else
+    nohup "${EDITOR:-xdg-open}" "$p" >/dev/null 2>&1 || true
+  fi
+  # manual fallback prompt:
+  if have zenity; then
+    zenity --info --title="SARX" --text="Please close the file viewer window for:\n${p}\n\nWhen finished, click OK to continue and re-encrypt." >/dev/null 2>&1
+  else
+    read -r -p "Press [Enter] after you close the viewer for: $p"
+  fi
+}
+
+save_to_sigilbook(){
+  local vault="$1" pw="$2"
+  if have sigilbook; then
+    if printf '%s\n' "$pw" | sigilbook save "$vault" - >/dev/null 2>&1; then
+      note "Saved password to sigilbook"; return 0
+    fi
+    while :; do
+      if have zenity; then
+        zenity --question --title="SARX" \
+          --text="Sigilbook not available.\nInsert your Velvet USB and click Retry to save the password.\n\n${vault}" \
+          --ok-label="Retry" --cancel-label="Skip" >/dev/null 2>&1 && act=retry || act=skip
+      else
+        echo "Insert Velvet USB and press [Enter] to retry, or Ctrl+C to skip." >&2
+        read -r _ || { act=skip; }
+        act=${act:-retry}
+      fi
+      [[ "$act" == "skip" ]] && return 1
+      printf '%s\n' "$pw" | sigilbook save "$vault" - >/dev/null 2>&1 && { note "Saved password to sigilbook"; return 0; }
+      sleep 1
+    done
+  else
+    errbox "sigilbook not found; cannot save password automatically."; return 1
+  fi
+}
+
+if [[ "$1" == "--watch" ]]; then
+  shift
+  WATCHDIRS=("$@")
+  [[ ${#WATCHDIRS[@]} -eq 0 ]] && WATCHDIRS=("/home/luke-miller/Desktop/Secure" "/mnt/MySSD/Desktop/Secure")
+  echo "SARX Watcher: ${WATCHDIRS[*]}" >&2
+
+  inotifywait -m -e close_write,moved_to,create --format '%w%f' "${WATCHDIRS[@]}" | while read -r file; do
+    # only plaintext drops
+    [[ "$file" == *.vault ]] && continue
+    [[ ! -f "$file" ]] && continue
+
+    # tiny settle for writes/renames
+    for i in {1..20}; do [[ -s "$file" ]] && break; sleep 0.05; done
+
+    # DO THE ONE THING: let global sarx handle encryption + sigilbook save
+    echo "SARX watcher encrypt: $file" >&2
+    sarx encrypt "$file" >/dev/null 2>&1 || echo "SARX watcher: encrypt failed: $file" >&2
+  done
+  exit 0
+fi
+
+main_one(){
+  echo "main_one called with: $1" >&2
+  local raw="$1"
+  local vault_path pt_path dir inode new_pw new_vault
+
+  vault_path="$(canon "$(uri_to_path "$raw")")"
+  [[ -f "$vault_path" ]] || { errbox "Not a file: $vault_path"; return 2; }
+  
+  local dec_pw="" found=0
+  if [[ "$vault_path" == *.vault ]]; then
+    if have sigilbook; then
+      if out="$(sigilbook get "$vault_path" 2>/dev/null | head -n1 | tr -d '\r\n')"; then
+        [[ -n "$out" && "$out" != "(not found)" ]] && { dec_pw="$out"; found=1; }
+      fi
+    fi
+  fi
+  [[ $found -eq 0 ]] && dec_pw="$(prompt_pw "$vault_path")"
+  [[ -z "$dec_pw" ]] && { note "Decrypt cancelled for $(basename "$vault_path")"; return 0; }
+
+  find_tools
+
+  dbg "decrypting $vault_path"
+  if ! printf '%s\n' "$dec_pw" | "${DECRYPT[@]}" "$vault_path"; then
+    errbox "Decrypt failed: $(basename "$vault_path")"; return 3
+  fi
+
+  if [[ "$vault_path" == *.vault ]]; then pt_path="${vault_path%.vault}"; else pt_path="$vault_path.dec"; fi
+  pt_path="$(canon "$pt_path")"
+  dir="$(dirname "$pt_path")"
+  inode="$(stat -Lc '%i' "$pt_path" 2>/dev/null || true)"
+  
+  # -- skip auto re-encrypt if this folder is in the watch list --
+  WATCHLIST="${HOME}/.sarx_watchfolders"
+  pt_dir="$(dirname "$(realpath "$pt_path")")"
+  if grep -Fxq "$pt_dir" "$WATCHLIST" 2>/dev/null; then
+    errbox "This file is in a secured (auto-encrypt) folder:\n$pt_dir\n\nTo decrypt or edit, move it to a non-watched folder first!"
+    echo "Not allowed: $pt_path is inside $pt_dir, which is an SARX auto-encrypt folder. Move it elsewhere to work with it." >&2
+    exit 1
+  fi
+  
+  # open & wait specifically for THIS file to finish
+  open_then_wait "$pt_path"
+
+  # If the app renamed/moved it, recover by inode (same dir), then recheck existence
+  if [[ ! -e "$pt_path" && -n "$inode" ]]; then
+    cand="$(find "$dir" -maxdepth 1 -inum "$inode" -print -quit 2>/dev/null || true)"
+    [[ -n "$cand" ]] && pt_path="$(canon "$cand")"
+  fi
+  # short backoff if the FS is settling
+  for i in {1..10}; do [[ -f "$pt_path" ]] && break; sleep 0.1; done
+  if [[ ! -f "$pt_path" ]]; then
+    errbox "Plaintext file not found after close:\n$pt_path\n\nIt may have been moved or deleted. No re-encrypt performed."
+    return 4
+  fi
+
+  
+  # re-encrypt (removes plaintext on success)
+    dbg "re-encrypting $pt_path"
+    out="$(sarx encrypt "$pt_path" 2>&1)"
+    echo "=== SARX ENCRYPT OUTPUT ==="
+    echo "$out"
+    echo "==========================="
+
+    # Grab Password: ... if present, otherwise take first non-blank, non-✅ line
+    pw="$(echo "$out" | grep -a '^Password:' | sed 's/^Password: //')"
+    if [[ -z "$pw" ]]; then
+      pw="$(echo "$out" | grep -a -v '^✅' | grep -a -v '^$' | head -n1)"
+    fi
+    if [[ -z "$pw" ]]; then
+      errbox "Failed to capture password from sarx encrypt output. Plaintext is still at:\n$pt_path"
+      return 5
+    fi
+    new_vault="${pt_path}.vault"
+    save_to_sigilbook "$(canon "$new_vault")" "$pw" || true
+    note "Re-encrypted: $(basename "$new_vault")"
+}
+
+[[ $# -lt 1 ]] && { errbox "No file provided."; exit 2; }
+rc=0; for a in "$@"; do main_one "$a" || rc=1; done; exit "$rc"
