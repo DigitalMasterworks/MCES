@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=MCES Vault Handler
-Comment=Decrypt MCES .vault files via Sigilbook or password prompt
-Exec=mces-vault-handler %F
-Terminal=false
-MimeType=application/x-mces-vault;
-Categories=Utility;Security;
-X-GNOME-UsesNotifications=true
