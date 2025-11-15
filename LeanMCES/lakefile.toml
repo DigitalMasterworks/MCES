@@ -1,6 +1,0 @@
-name = "LeanMCES"
-version = "0.1.0"
-defaultTargets = ["LeanMCES"]
-
-[[lean_lib]]
-name = "LeanMCES"
