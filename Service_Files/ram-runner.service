@@ -1,4 +1,4 @@
-  GNU nano 7.2                                                   /etc/systemd/system/ram-runner.service                                                             
+[Unit]
 Description=RAM Runner (USB preload → /dev/shm with Sigilbook isolation)
 After=network.target
 
