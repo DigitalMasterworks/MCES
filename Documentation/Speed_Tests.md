@@ -1,0 +1,92 @@
+Tested on a Ryzen 5 3600  
+  
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	988.55		650.32		771.95		283.312		YES
+2	1503.41		1589.37		1111.72		152.869		YES
+4	2810.26		1939.21		1674.65		111.281		YES
+6	3570.35		2336.20		1793.73		98.554		YES
+8	3581.49		2439.20		1730.79		98.774		YES
+12	5657.21		2713.79		1808.55		92.142		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	993.04		663.42		766.24		281.241		YES
+2	1531.80		1513.94		1471.92		133.991		YES
+4	2312.16		2448.33		1576.51		104.275		YES
+6	4290.11		1872.11		1765.41		110.060		YES
+8	3844.71		2735.29		1928.11		88.423		YES
+12	5714.30		2910.35		1843.39		88.608		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1003.94		667.46		772.87		279.209		YES
+2	1511.99		1617.26		1518.54		127.686		YES
+4	3486.16		1843.26		1574.63		117.759		YES
+6	4000.21		2274.47		1775.93		100.275		YES
+8	4045.37		2480.07		1788.84		96.224		YES
+12	3638.69		2596.76		1829.23		93.177		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1007.40		673.62		783.87		276.024		YES
+2	1570.60		1587.40		1455.03		131.723		YES
+4	2155.63		1791.65		1708.02		114.362		YES
+6	3364.28		2102.84		1768.14		104.111		YES
+8	3615.36		2434.49		1820.40		96.009		YES
+12	6115.36		2639.75		1881.32		91.037		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	990.16		650.50		760.18		285.277		YES
+2	1566.52		1617.17		1526.97		127.325		YES
+4	2348.54		1818.45		1562.68		118.984		YES
+6	3300.15		2260.01		1810.28		99.488		YES
+8	3419.06		2500.29		1779.30		96.197		YES
+12	5679.84		2969.44		1874.62		87.020		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1020.71		665.92		752.30		283.094		YES
+2	1669.78		1540.30		1529.26		130.313		YES
+4	2546.74		1915.82		1736.11		109.797		YES
+6	3487.37		2270.06		1719.81		102.198		YES
+8	3542.59		2244.07		1802.46		100.042		YES
+12	4397.46		2753.04		1843.19		90.577		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1003.06		658.32		772.18		281.405		YES
+2	2044.79		1577.15		1512.71		129.512		YES
+4	2252.01		2048.07		1664.84		108.892		YES
+6	2949.93		2023.86		1673.28		109.173		YES
+8	3452.99		2358.93		1790.94		98.229		YES
+12	4426.21		2925.88		1892.14		87.028		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1019.50		658.57		759.69		283.477		YES
+2	1630.71		1616.62		1265.03		140.907		YES
+4	2521.75		1913.94		1667.19		112.229		YES
+6	3259.63		2236.16		1738.41		102.243		YES
+8	4417.91		2581.97		1838.26		93.129		YES
+12	5203.53		2744.24		1862.84		90.122		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1013.21		655.86		740.68		287.483		YES
+2	1503.06		1585.33		1478.58		130.710		YES
+4	2516.99		1755.52		1675.17		116.659		YES
+6	3285.40		2257.93		1735.10		101.922		YES
+8	3463.58		2468.48		1755.96		97.460		YES
+12	5018.82		2680.44		1859.59		91.082		YES
+  sarx benchmark speed
+[sarx_bench_stream] Parallel stream: 12 HW threads, data=100 MB
+THREADS	KS(MB/s)	ENC(MB/s)	DEC(MB/s)	Roundtrip(ms)	OK
+1	1016.47		661.06		769.34		281.255		YES
+2	1711.27		1561.46		1525.92		129.577		YES
+4	2671.83		1941.82		1642.00		112.400		YES
+6	2928.92		2507.49		1679.36		99.427		YES
+8	3847.60		2458.18		1789.07		96.575		YES
+12	3993.20		2953.62		1829.22		88.525		YES
