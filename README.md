@@ -170,12 +170,6 @@ Key files and directories:
 * `src/bin/sarx_stream_dieharder.rs`, `src/bin/sarx_test_harness.rs`
   RNG and AEAD test harnesses.
 
-* `Substrate_Crypto_Experiments/bit_energy_bench/*`
-  Bit-energy and thermo-hardening experiment binaries:
-
-  * `bit_energy_bench` – J/bit measurements for memory workloads
-  * `thermo_bruteforce` – Argon2 vs Argon2+thermo cost comparison
-
 * `Documentation/`
   LaTeX sources and PDFs for the SARX design paper.
 
